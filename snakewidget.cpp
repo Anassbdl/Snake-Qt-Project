@@ -91,7 +91,6 @@ SnakeWidget::SnakeWidget(QWidget *parent)
     hidePauseButtons();
 }
 
-// NOUVEAU : définir le niveau
 void SnakeWidget::setLevel(int level)
 {
     game.setLevel(level);
@@ -177,7 +176,7 @@ void SnakeWidget::onRestartClicked()
     isPaused = false;
     scorePopups.clear();
     game.reset();
-    timer.start(game.getSpeed());  // MODIFIÉ : utilise la vitesse du niveau
+    timer.start(game.getSpeed());
     setFocus();
     update();
 }
@@ -202,7 +201,7 @@ void SnakeWidget::onPauseRestartClicked()
     waitingStart = false;
     scorePopups.clear();
     game.reset();
-    timer.start(game.getSpeed());  // MODIFIÉ
+    timer.start(game.getSpeed());
     setFocus();
     update();
 }
@@ -253,7 +252,7 @@ void SnakeWidget::startGameDirectly()
     isPaused = false;
     scorePopups.clear();
     game.reset();
-    timer.start(game.getSpeed());  // MODIFIÉ
+    timer.start(game.getSpeed());
     update();
 }
 
@@ -278,7 +277,7 @@ void SnakeWidget::togglePause()
     else
     {
         hidePauseButtons();
-        timer.start(game.getSpeed());  // MODIFIÉ
+        timer.start(game.getSpeed());
         setFocus();
     }
 
@@ -715,7 +714,6 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
         p.drawText(textRect, Qt::AlignCenter, scoreText);
     }
 
-    // OVERLAY PAUSE
     if (isPaused)
     {
         p.fillRect(gameRect, QColor(0, 0, 0, 180));
@@ -751,22 +749,26 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
     hudGrad.setColorAt(1, QColor(5, 5, 20, 200));
     p.fillRect(hudRect, hudGrad);
 
+    // ============= TOUT SUR UNE SEULE LIGNE =============
+
+    // Score (gauche)
     p.setPen(QColor(0, 255, 180));
     p.setFont(QFont("Consolas", 16, QFont::Bold));
     p.drawText(offsetX + 20, hudY,
                QString("Score : %1").arg(game.getScore()));
 
+    // Longueur (gauche-centre)
     p.setPen(QColor(100, 200, 255));
-    p.drawText(offsetX + gameWidth/2 - 80, hudY,
+    p.drawText(offsetX + 200, hudY,
                QString("Longueur : %1").arg(game.getLength()));
 
+    // Best (centre-droite)
     p.setPen(QColor(255, 200, 0));
-    p.drawText(offsetX + gameWidth - 240, hudY,
+    p.drawText(offsetX + gameWidth/2 + 80, hudY,
                QString("Best : %1").arg(bestScore));
 
-    // NOUVEAU : Affichage du niveau
+    // Niveau (droite)
     p.setPen(QColor(255, 150, 255));
-    p.setFont(QFont("Consolas", 14, QFont::Bold));
     QString levelText;
     switch (game.getLevel())
     {
@@ -775,9 +777,10 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
     case 3: levelText = "DIFFICILE"; break;
     default: levelText = "MOYEN"; break;
     }
-    p.drawText(offsetX + gameWidth - 180, hudY + 25,
+    p.drawText(offsetX + gameWidth - 220, hudY,
                QString("Niveau : %1").arg(levelText));
 
+    // Instructions (ligne 2, plus petite)
     p.setPen(QColor(150, 150, 150));
     p.setFont(QFont("Consolas", 10));
     p.drawText(offsetX + 20, hudY + 25,
@@ -812,7 +815,7 @@ void SnakeWidget::keyPressEvent(QKeyEvent *event)
             game.reset();
             lastScore = 0;
             scorePopups.clear();
-            timer.start(game.getSpeed());  // MODIFIÉ
+            timer.start(game.getSpeed());
             update();
         }
         return;
