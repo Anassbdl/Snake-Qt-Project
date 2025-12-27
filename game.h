@@ -62,6 +62,13 @@ public:
     Direction getDirection() const { return direction; }
     const QVector<Obstacle> &getObstacles() const { return obstacles; }
 
+    // Nouveau : récupérer le dernier fruit mangé
+    int getLastFruitEaten() const { return lastFruitEaten; }
+    void clearLastFruitEaten() { lastFruitEaten = -1; }
+
+signals:
+    void fruitEaten(int x, int y, int points); // NOUVEAU signal
+
 private:
     SnakeNode *head;
     int length;
@@ -73,6 +80,7 @@ private:
     int score;
     bool gameOver;
     QVector<Obstacle> obstacles;
+    int lastFruitEaten; // NOUVEAU : index du dernier fruit mangé
 
     SnakeNode *createNode(int x, int y);
     void addSegment(int x, int y);

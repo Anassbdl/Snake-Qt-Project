@@ -4,7 +4,17 @@
 #include <QWidget>
 #include <QTimer>
 #include <QPushButton>
+#include <QPropertyAnimation>
 #include "game.h"
+
+struct ScorePopup
+{
+    int x;
+    int y;
+    int points;
+    int alpha;
+    int offsetY;
+};
 
 class SnakeWidget : public QWidget
 {
@@ -28,20 +38,23 @@ private slots:
     void gameLoop();
     void onRestartClicked();
     void onMenuClicked();
+    void onFruitEaten(int x, int y, int points);
+    void updateScorePopups();
 
 private:
     Game game;
     QTimer timer;
+    QTimer popupTimer;
     int cellSize;
     bool isFullscreen;
     int bestScore;
     bool waitingStart;
-    bool showScorePopup;
-    int scorePopupAlpha;
     int lastScore;
 
     QPushButton *restartButton;
     QPushButton *menuButton;
+
+    QVector<ScorePopup> scorePopups;
 
     void toggleFullscreen();
     void drawSnakeSegment(QPainter &p, const QRect &rect, bool isHead,

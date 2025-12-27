@@ -16,8 +16,7 @@ SnakeWidget::SnakeWidget(QWidget *parent)
     isFullscreen(false),
     bestScore(0),
     waitingStart(true),
-    showScorePopup(false),
-    scorePopupAlpha(0)
+    lastScore(0)
 {
     setFocusPolicy(Qt::StrongFocus);
     int preferredWidth = WIDTH * cellSize;
@@ -25,8 +24,16 @@ SnakeWidget::SnakeWidget(QWidget *parent)
     setMinimumSize(preferredWidth, preferredHeight);
     resize(preferredWidth, preferredHeight);
     connect(&timer, &QTimer::timeout, this, &SnakeWidget::gameLoop);
+
+    // Timer pour les animations de popup
+    connect(&popupTimer, &QTimer::timeout, this, &SnakeWidget::updateScorePopups);
+    popupTimer.start(30); // 30ms pour une animation fluide
+
     game.reset();
     timer.stop();
+
+    // Connexion pour l'animation quand un fruit est mangé
+    connect(&game, &Game::fruitEaten, this, &SnakeWidget::onFruitEaten);
 
     // Créer les boutons Game Over
     restartButton = new QPushButton("REJOUER", this);
@@ -85,7 +92,6 @@ void SnakeWidget::setupGameOverButtons()
     int centerX = offsetX + gameWidth / 2;
     int centerY = offsetY + gameHeight / 2;
 
-    // Plus d'espace en bas pour les boutons
     restartButton->move(centerX - 220, centerY + 120);
     menuButton->move(centerX + 20, centerY + 120);
 
@@ -104,6 +110,7 @@ void SnakeWidget::onRestartClicked()
 {
     hideGameOverButtons();
     waitingStart = false;
+    scorePopups.clear();
     game.reset();
     timer.start(160);
     setFocus();
@@ -114,12 +121,47 @@ void SnakeWidget::onMenuClicked()
 {
     hideGameOverButtons();
     timer.stop();
+    scorePopups.clear();
     emit backToMenu();
+}
+
+void SnakeWidget::onFruitEaten(int x, int y, int points)
+{
+    // Créer un popup de score animé
+    ScorePopup popup;
+    popup.x = x;
+    popup.y = y;
+    popup.points = points;
+    popup.alpha = 255;
+    popup.offsetY = 0;
+    scorePopups.append(popup);
+}
+
+void SnakeWidget::updateScorePopups()
+{
+    // Mettre à jour toutes les animations de popup
+    for (int i = scorePopups.size() - 1; i >= 0; --i)
+    {
+        scorePopups[i].alpha -= 8;  // Fade out
+        scorePopups[i].offsetY -= 2; // Monte vers le haut
+
+        // Supprimer si complètement transparent
+        if (scorePopups[i].alpha <= 0)
+        {
+            scorePopups.removeAt(i);
+        }
+    }
+
+    if (!scorePopups.isEmpty())
+    {
+        update(); // Redessiner si des popups sont actifs
+    }
 }
 
 void SnakeWidget::startGameDirectly()
 {
     waitingStart = false;
+    scorePopups.clear();
     game.reset();
     timer.start(160);
     update();
@@ -372,7 +414,6 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
     p.setRenderHint(QPainter::Antialiasing, true);
     p.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-    // Fond avec dégradé
     QLinearGradient bgGradient(0, 0, 0, height());
     bgGradient.setColorAt(0, QColor(15, 15, 35));
     bgGradient.setColorAt(1, QColor(10, 10, 25));
@@ -386,13 +427,10 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
 
     QRect gameRect(offsetX, offsetY, gameWidth, gameHeight);
 
-    // **Game Over**
     if (game.isGameOver())
     {
-        // Fond identique au menu général (OPAQUE)
         p.fillRect(gameRect, QColor(15, 15, 30));
 
-        // Grille décorative
         p.setPen(QPen(QColor(0, 60, 60, 100), 1));
         int gridSize = 30;
         for (int x = 0; x < gameRect.width(); x += gridSize)
@@ -402,13 +440,11 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
             p.drawLine(gameRect.left(), gameRect.top() + y,
                        gameRect.right(), gameRect.top() + y);
 
-        // Bordure rouge
         p.setPen(QPen(QColor(255, 50, 50), 4));
         p.drawRect(gameRect.adjusted(5, 5, -5, -5));
 
         int startY = gameRect.top() + 120;
 
-        // Titre GAME OVER
         p.setPen(QColor(255, 100, 100));
         p.setFont(QFont("Consolas", 42, QFont::Bold));
         QRect titleRect(gameRect.left(), startY, gameRect.width(), 60);
@@ -431,7 +467,6 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
             startY += 30;
         }
 
-        // Score final
         p.setPen(Qt::white);
         p.setFont(QFont("Consolas", 22));
         QRect scoreRect(gameRect.left(), startY, gameRect.width(), 40);
@@ -440,29 +475,25 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
 
         startY += 50;
 
-        // Meilleur score
         p.setPen(QColor(255, 200, 0));
         p.setFont(QFont("Consolas", 18));
         QRect bestRect(gameRect.left(), startY, gameRect.width(), 40);
         p.drawText(bestRect, Qt::AlignCenter,
                    QString("Meilleur score : %1").arg(bestScore));
 
-        return; // SORTIR ICI
+        return;
     }
 
-    // Fond de jeu
     QLinearGradient gameGradient(gameRect.topLeft(), gameRect.bottomRight());
     gameGradient.setColorAt(0, QColor(5, 5, 20));
     gameGradient.setColorAt(1, QColor(8, 8, 25));
     p.fillRect(gameRect, gameGradient);
 
-    // Bordure
     p.setPen(QPen(QColor(0, 220, 170), 3));
     p.drawRect(gameRect.adjusted(1, 1, -1, -1));
     p.setPen(QPen(QColor(0, 255, 200, 100), 1));
     p.drawRect(gameRect.adjusted(3, 3, -3, -3));
 
-    // Grille
     p.setPen(QPen(QColor(0, 100, 100), 1));
     for (int x = 1; x < WIDTH; ++x)
         p.drawLine(offsetX + x * cellSize, offsetY,
@@ -471,7 +502,6 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
         p.drawLine(offsetX, offsetY + y * cellSize,
                    offsetX + gameWidth, offsetY + y * cellSize);
 
-    // Écran d'attente
     if (waitingStart)
     {
         p.setPen(QPen(QColor(0, 255, 180), 2));
@@ -497,7 +527,6 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
         return;
     }
 
-    // Obstacles
     for (const Obstacle &o : game.getObstacles())
     {
         QRect r(offsetX + o.x * cellSize,
@@ -518,7 +547,6 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
         p.drawRect(r.adjusted(3, 3, -cellSize/2, -cellSize/2));
     }
 
-    // Fruits
     for (int i = 0; i < game.foodCount(); ++i)
     {
         QRect foodRect(offsetX + game.foodX(i) * cellSize,
@@ -527,7 +555,6 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
         drawFruit(p, foodRect, game.foodType(i));
     }
 
-    // Serpent
     Direction snakeDir = game.getDirection();
     SnakeNode *cur = game.snakeHead();
     int segmentIndex = 0;
@@ -545,37 +572,46 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
         segmentIndex++;
     }
 
-    // **HUD EN BAS (sans bordure)**
+    // **DESSINER LES POPUPS DE SCORE ANIMÉS**
+    for (const ScorePopup &popup : scorePopups)
+    {
+        int screenX = offsetX + popup.x * cellSize + cellSize / 2;
+        int screenY = offsetY + popup.y * cellSize + popup.offsetY;
+
+        // Couleur avec transparence
+        QColor textColor(255, 255, 100, popup.alpha);
+        p.setPen(textColor);
+        p.setFont(QFont("Consolas", 18, QFont::Bold));
+
+        QString scoreText = QString("+%1").arg(popup.points);
+        QRect textRect(screenX - 30, screenY - 20, 60, 40);
+        p.drawText(textRect, Qt::AlignCenter, scoreText);
+    }
+
     if (game.getScore() > bestScore)
         bestScore = game.getScore();
 
-    // Position juste sous le plateau
     int hudY = gameRect.bottom() + 40;
 
-    // Fond de la barre HUD
     QRect hudRect(offsetX, gameRect.bottom() + 15, gameWidth, 50);
     QLinearGradient hudGrad(hudRect.topLeft(), hudRect.bottomLeft());
     hudGrad.setColorAt(0, QColor(10, 10, 30, 200));
     hudGrad.setColorAt(1, QColor(5, 5, 20, 200));
     p.fillRect(hudRect, hudGrad);
 
-    // Score
     p.setPen(QColor(0, 255, 180));
     p.setFont(QFont("Consolas", 16, QFont::Bold));
     p.drawText(offsetX + 20, hudY,
                QString("Score : %1").arg(game.getScore()));
 
-    // Longueur
     p.setPen(QColor(100, 200, 255));
     p.drawText(offsetX + gameWidth/2 - 80, hudY,
                QString("Longueur : %1").arg(game.getLength()));
 
-    // Best
     p.setPen(QColor(255, 200, 0));
     p.drawText(offsetX + gameWidth - 150, hudY,
                QString("Best : %1").arg(bestScore));
 
-    // Contrôles en bas du HUD
     p.setPen(QColor(150, 150, 150));
     p.setFont(QFont("Consolas", 10));
     p.drawText(offsetX + 20, hudY + 25,
@@ -603,6 +639,7 @@ void SnakeWidget::keyPressEvent(QKeyEvent *event)
             waitingStart = false;
             game.reset();
             lastScore = 0;
+            scorePopups.clear();
             timer.start(160);
             update();
         }

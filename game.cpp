@@ -7,7 +7,8 @@ Game::Game(QObject *parent)
     direction(RIGHT),
     nextDirection(RIGHT),
     score(0),
-    gameOver(false)
+    gameOver(false),
+    lastFruitEaten(-1)
 {
     reset();
 }
@@ -125,6 +126,7 @@ void Game::generateSingleFood(int index)
     food_x[index] = x;
     food_y[index] = y;
 
+    // Générer un type de fruit aléatoire
     int randType = QRandomGenerator::global()->bounded(0, 3);
     food_type[index] = static_cast<FruitType>(randType);
 }
@@ -230,13 +232,21 @@ void Game::moveSnake()
     if (foodIndex != -1)
     {
         FruitType ft = food_type[foodIndex];
+        int points = 0;
         if (ft == APPLE)
-            score += 10;
+            points = 10;
         else if (ft == BANANA)
-            score += 15;
+            points = 15;
         else if (ft == PINEAPPLE)
-            score += 25;
+            points = 25;
 
+        score += points;
+        lastFruitEaten = foodIndex;
+
+        // Émettre le signal avec position et points
+        emit fruitEaten(food_x[foodIndex], food_y[foodIndex], points);
+
+        // IMPORTANT : Régénérer immédiatement le fruit mangé
         generateSingleFood(foodIndex);
     }
     else
@@ -273,6 +283,7 @@ void Game::reset()
     nextDirection = RIGHT;
     score = 0;
     gameOver = false;
+    lastFruitEaten = -1;
     addSegment(WIDTH / 2 - 1, HEIGHT / 2);
     addSegment(WIDTH / 2 - 2, HEIGHT / 2);
     generateFood();
