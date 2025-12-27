@@ -35,7 +35,6 @@ int main(int argc, char *argv[])
     mainStack->addWidget(menu);
     mainStack->addWidget(gameContainer);
 
-    // Connexion pour démarrer le jeu
     QObject::connect(menu, &MenuWidget::startGame, mainStack,
                      [game, gameContainer, mainStack](int level) {
                          Q_UNUSED(level);
@@ -44,17 +43,14 @@ int main(int argc, char *argv[])
                          game->setFocus();
                      });
 
-    // Connexion pour quitter
     QObject::connect(menu, &MenuWidget::quitGame, mainStack, &QWidget::close);
 
-    // Connexion pour retourner au menu
     QObject::connect(game, &SnakeWidget::backToMenu, mainStack,
                      [menu, mainStack]() {
                          mainStack->setCurrentWidget(menu);
                          menu->setFocus();
                      });
 
-    // Connexion F11 depuis le JEU
     QObject::connect(game, &SnakeWidget::requestFullscreen, mainStack,
                      [mainStack](bool fullscreen) {
                          if (fullscreen) {
@@ -64,7 +60,6 @@ int main(int argc, char *argv[])
                          }
                      });
 
-    // Connexion F11 depuis le MENU
     QObject::connect(menu, &MenuWidget::requestFullscreen, mainStack,
                      [mainStack](bool fullscreen) {
                          if (fullscreen) {

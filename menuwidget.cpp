@@ -9,7 +9,7 @@ MenuWidget::MenuWidget(QWidget *parent)
     : QWidget(parent), currentLevel(1), isFullscreen(false)
 {
     setMinimumSize(800, 600);
-    setFocusPolicy(Qt::StrongFocus);  // IMPORTANT pour recevoir les événements clavier
+    setFocusPolicy(Qt::StrongFocus);
     setupUI();
 }
 
@@ -99,7 +99,6 @@ void MenuWidget::paintEvent(QPaintEvent *event)
     p.setFont(QFont("Consolas", 16));
     p.drawText(rect().adjusted(0, 130, 0, 0), Qt::AlignHCenter | Qt::AlignTop, "Menu Principal");
 
-    // Afficher indication F11
     p.setPen(QColor(150, 150, 150));
     p.setFont(QFont("Consolas", 10));
     p.drawText(rect().adjusted(0, 0, -20, -20), Qt::AlignRight | Qt::AlignBottom, "F11 : Plein ecran");

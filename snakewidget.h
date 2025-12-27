@@ -4,7 +4,6 @@
 #include <QWidget>
 #include <QTimer>
 #include <QPushButton>
-#include <QPropertyAnimation>
 #include "game.h"
 
 struct ScorePopup

@@ -14,23 +14,23 @@ public:
 signals:
     void startGame(int level);
     void quitGame();
-    void requestFullscreen(bool fullscreen);  // NOUVEAU
+    void requestFullscreen(bool fullscreen);
 
 private:
     QPushButton *playButton;
     QPushButton *levelButton;
     QPushButton *quitButton;
     int currentLevel;
-    bool isFullscreen;  // NOUVEAU
+    bool isFullscreen;
 
     void setupUI();
     QString getButtonStyle(const QString &color, const QString &hoverColor);
-    void toggleFullscreen();  // NOUVEAU
+    void toggleFullscreen();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
-    void keyPressEvent(QKeyEvent *event) override;  // NOUVEAU
+    void keyPressEvent(QKeyEvent *event) override;
 
 private slots:
     void onPlayClicked();

@@ -126,9 +126,13 @@ void Game::generateSingleFood(int index)
     food_x[index] = x;
     food_y[index] = y;
 
-    // Générer un type de fruit aléatoire
-    int randType = QRandomGenerator::global()->bounded(0, 3);
-    food_type[index] = static_cast<FruitType>(randType);
+    // Index 0 = APPLE, Index 1 = BANANA, Index 2 = PINEAPPLE
+    if (index == 0)
+        food_type[index] = APPLE;
+    else if (index == 1)
+        food_type[index] = BANANA;
+    else if (index == 2)
+        food_type[index] = PINEAPPLE;
 }
 
 void Game::generateFood()
@@ -217,7 +221,6 @@ void Game::moveSnake()
     case RIGHT: ++newX; break;
     }
 
-    // wrapping
     if (newX < 0) newX = WIDTH - 1;
     if (newX >= WIDTH) newX = 0;
     if (newY < 0) newY = HEIGHT - 1;
@@ -243,10 +246,8 @@ void Game::moveSnake()
         score += points;
         lastFruitEaten = foodIndex;
 
-        // Émettre le signal avec position et points
         emit fruitEaten(food_x[foodIndex], food_y[foodIndex], points);
 
-        // IMPORTANT : Régénérer immédiatement le fruit mangé
         generateSingleFood(foodIndex);
     }
     else
