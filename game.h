@@ -51,6 +51,11 @@ public:
     void updateGame();
     void changeDirection(Direction dir);
 
+    // NOUVEAU : gestion du niveau
+    void setLevel(int level);
+    int getLevel() const { return currentLevel; }
+    int getSpeed() const;  // Retourne la vitesse selon le niveau
+
     SnakeNode *snakeHead() const { return head; }
     int getScore() const { return score; }
     int getLength() const { return length; }
@@ -66,7 +71,7 @@ public:
     void clearLastFruitEaten() { lastFruitEaten = -1; }
 
 signals:
-    void fruitEaten(int x, int y, int points, FruitType type);  // MODIFIÉ : ajout du type
+    void fruitEaten(int x, int y, int points, FruitType type);
 
 private:
     SnakeNode *head;
@@ -80,6 +85,7 @@ private:
     bool gameOver;
     QVector<Obstacle> obstacles;
     int lastFruitEaten;
+    int currentLevel;  // NOUVEAU : niveau actuel (1, 2, ou 3)
 
     SnakeNode *createNode(int x, int y);
     void addSegment(int x, int y);

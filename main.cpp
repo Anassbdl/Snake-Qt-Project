@@ -35,9 +35,10 @@ int main(int argc, char *argv[])
     mainStack->addWidget(menu);
     mainStack->addWidget(gameContainer);
 
+    // MODIFIÉ : passe le niveau au jeu
     QObject::connect(menu, &MenuWidget::startGame, mainStack,
                      [game, gameContainer, mainStack](int level) {
-                         Q_UNUSED(level);
+                         game->setLevel(level);  // NOUVEAU : définir le niveau
                          game->startGameDirectly();
                          mainStack->setCurrentWidget(gameContainer);
                          game->setFocus();

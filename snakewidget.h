@@ -23,6 +23,7 @@ class SnakeWidget : public QWidget
 public:
     explicit SnakeWidget(QWidget *parent = nullptr);
     void startGameDirectly();
+    void setLevel(int level);  // NOUVEAU : définir le niveau
 
 signals:
     void backToMenu();
@@ -41,7 +42,6 @@ private slots:
     void onFruitEaten(int x, int y, int points, FruitType type);
     void updateScorePopups();
 
-    // NOUVEAUX SLOTS POUR PAUSE
     void onPauseResumeClicked();
     void onPauseRestartClicked();
     void onPauseMenuClicked();
@@ -55,14 +55,10 @@ private:
     int bestScore;
     bool waitingStart;
     int lastScore;
-
-    // NOUVEAU : état de pause
     bool isPaused;
 
     QPushButton *restartButton;
     QPushButton *menuButton;
-
-    // NOUVEAUX BOUTONS PAUSE
     QPushButton *pauseResumeButton;
     QPushButton *pauseRestartButton;
     QPushButton *pauseMenuButton;
@@ -70,15 +66,15 @@ private:
     QVector<ScorePopup> scorePopups;
 
     void toggleFullscreen();
-    void togglePause();  // NOUVEAU
+    void togglePause();
     void drawSnakeSegment(QPainter &p, const QRect &rect, bool isHead,
                           float segmentRatio, Direction dir);
     void drawFruit(QPainter &p, const QRect &rect, FruitType type);
     QString getButtonStyle(const QString &color, const QString &hoverColor);
     void setupGameOverButtons();
     void hideGameOverButtons();
-    void setupPauseButtons();   // NOUVEAU
-    void hidePauseButtons();    // NOUVEAU
+    void setupPauseButtons();
+    void hidePauseButtons();
 };
 
 #endif // SNAKEWIDGET_H

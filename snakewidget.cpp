@@ -17,7 +17,7 @@ SnakeWidget::SnakeWidget(QWidget *parent)
     bestScore(0),
     waitingStart(true),
     lastScore(0),
-    isPaused(false)  // NOUVEAU
+    isPaused(false)
 {
     setFocusPolicy(Qt::StrongFocus);
     int preferredWidth = WIDTH * cellSize;
@@ -59,7 +59,7 @@ SnakeWidget::SnakeWidget(QWidget *parent)
 
     hideGameOverButtons();
 
-    // NOUVEAUX BOUTONS PAUSE
+    // BOUTONS PAUSE
     pauseResumeButton = new QPushButton("REPRENDRE", this);
     pauseRestartButton = new QPushButton("RECOMMENCER", this);
     pauseMenuButton = new QPushButton("MENU PRINCIPAL", this);
@@ -89,6 +89,12 @@ SnakeWidget::SnakeWidget(QWidget *parent)
     connect(pauseMenuButton, &QPushButton::clicked, this, &SnakeWidget::onPauseMenuClicked);
 
     hidePauseButtons();
+}
+
+// NOUVEAU : définir le niveau
+void SnakeWidget::setLevel(int level)
+{
+    game.setLevel(level);
 }
 
 QString SnakeWidget::getButtonStyle(const QString &color, const QString &hoverColor)
@@ -136,7 +142,6 @@ void SnakeWidget::hideGameOverButtons()
     menuButton->hide();
 }
 
-// NOUVEAUX : GESTION BOUTONS PAUSE
 void SnakeWidget::setupPauseButtons()
 {
     int gameWidth = WIDTH * cellSize;
@@ -172,7 +177,7 @@ void SnakeWidget::onRestartClicked()
     isPaused = false;
     scorePopups.clear();
     game.reset();
-    timer.start(160);
+    timer.start(game.getSpeed());  // MODIFIÉ : utilise la vitesse du niveau
     setFocus();
     update();
 }
@@ -185,7 +190,6 @@ void SnakeWidget::onMenuClicked()
     emit backToMenu();
 }
 
-// NOUVEAUX SLOTS PAUSE
 void SnakeWidget::onPauseResumeClicked()
 {
     togglePause();
@@ -198,7 +202,7 @@ void SnakeWidget::onPauseRestartClicked()
     waitingStart = false;
     scorePopups.clear();
     game.reset();
-    timer.start(160);
+    timer.start(game.getSpeed());  // MODIFIÉ
     setFocus();
     update();
 }
@@ -249,7 +253,7 @@ void SnakeWidget::startGameDirectly()
     isPaused = false;
     scorePopups.clear();
     game.reset();
-    timer.start(160);
+    timer.start(game.getSpeed());  // MODIFIÉ
     update();
 }
 
@@ -259,7 +263,6 @@ void SnakeWidget::toggleFullscreen()
     emit requestFullscreen(isFullscreen);
 }
 
-// NOUVEAU : TOGGLE PAUSE
 void SnakeWidget::togglePause()
 {
     if (waitingStart || game.isGameOver())
@@ -275,7 +278,7 @@ void SnakeWidget::togglePause()
     else
     {
         hidePauseButtons();
-        timer.start(160);
+        timer.start(game.getSpeed());  // MODIFIÉ
         setFocus();
     }
 
@@ -712,20 +715,17 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
         p.drawText(textRect, Qt::AlignCenter, scoreText);
     }
 
-    // NOUVEAU : OVERLAY PAUSE
+    // OVERLAY PAUSE
     if (isPaused)
     {
-        // Fond semi-transparent
         p.fillRect(gameRect, QColor(0, 0, 0, 180));
 
-        // Titre PAUSE
         p.setPen(QColor(0, 255, 180));
         p.setFont(QFont("Consolas", 48, QFont::Bold));
         QRect pauseTitleRect(gameRect.left(), gameRect.top() + 80,
                              gameRect.width(), 60);
         p.drawText(pauseTitleRect, Qt::AlignCenter, "PAUSE");
 
-        // Score actuel
         p.setPen(Qt::white);
         p.setFont(QFont("Consolas", 20));
         QRect pauseScoreRect(gameRect.left(), gameRect.top() + 160,
@@ -733,7 +733,6 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
         p.drawText(pauseScoreRect, Qt::AlignCenter,
                    QString("Score : %1").arg(game.getScore()));
 
-        // Instruction
         p.setPen(QColor(200, 200, 200));
         p.setFont(QFont("Consolas", 12));
         QRect instructionRect(gameRect.left(), gameRect.bottom() - 60,
@@ -762,8 +761,22 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
                QString("Longueur : %1").arg(game.getLength()));
 
     p.setPen(QColor(255, 200, 0));
-    p.drawText(offsetX + gameWidth - 150, hudY,
+    p.drawText(offsetX + gameWidth - 240, hudY,
                QString("Best : %1").arg(bestScore));
+
+    // NOUVEAU : Affichage du niveau
+    p.setPen(QColor(255, 150, 255));
+    p.setFont(QFont("Consolas", 14, QFont::Bold));
+    QString levelText;
+    switch (game.getLevel())
+    {
+    case 1: levelText = "FACILE"; break;
+    case 2: levelText = "MOYEN"; break;
+    case 3: levelText = "DIFFICILE"; break;
+    default: levelText = "MOYEN"; break;
+    }
+    p.drawText(offsetX + gameWidth - 180, hudY + 25,
+               QString("Niveau : %1").arg(levelText));
 
     p.setPen(QColor(150, 150, 150));
     p.setFont(QFont("Consolas", 10));
@@ -779,7 +792,6 @@ void SnakeWidget::keyPressEvent(QKeyEvent *event)
         return;
     }
 
-    // NOUVEAU : Touche P pour pause
     if (event->key() == Qt::Key_P)
     {
         togglePause();
@@ -800,13 +812,13 @@ void SnakeWidget::keyPressEvent(QKeyEvent *event)
             game.reset();
             lastScore = 0;
             scorePopups.clear();
-            timer.start(160);
+            timer.start(game.getSpeed());  // MODIFIÉ
             update();
         }
         return;
     }
 
-    if (game.isGameOver() || isPaused)  // MODIFIÉ : bloquer input si pause
+    if (game.isGameOver() || isPaused)
     {
         return;
     }

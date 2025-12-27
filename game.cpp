@@ -8,7 +8,8 @@ Game::Game(QObject *parent)
     nextDirection(RIGHT),
     score(0),
     gameOver(false),
-    lastFruitEaten(-1)
+    lastFruitEaten(-1),
+    currentLevel(1)  // NOUVEAU : niveau par défaut
 {
     reset();
 }
@@ -16,6 +17,25 @@ Game::Game(QObject *parent)
 Game::~Game()
 {
     freeSnake();
+}
+
+// NOUVEAU : définir le niveau
+void Game::setLevel(int level)
+{
+    if (level >= 1 && level <= 3)
+        currentLevel = level;
+}
+
+// NOUVEAU : retourner la vitesse selon le niveau
+int Game::getSpeed() const
+{
+    switch (currentLevel)
+    {
+    case 1: return 200;  // Facile : 200ms
+    case 2: return 140;  // Moyen : 140ms
+    case 3: return 90;   // Difficile : 90ms
+    default: return 140;
+    }
 }
 
 SnakeNode *Game::createNode(int x, int y)
@@ -144,7 +164,17 @@ void Game::generateObstacles()
 {
     obstacles.clear();
     QRandomGenerator *rg = QRandomGenerator::global();
-    const int nbObs = 8;
+
+    // MODIFIÉ : nombre d'obstacles selon le niveau
+    int nbObs;
+    switch (currentLevel)
+    {
+    case 1: nbObs = 5; break;   // Facile : 5 obstacles
+    case 2: nbObs = 8; break;   // Moyen : 8 obstacles
+    case 3: nbObs = 12; break;  // Difficile : 12 obstacles
+    default: nbObs = 8; break;
+    }
+
     for (int i = 0; i < nbObs; ++i)
     {
         int x, y;
@@ -245,7 +275,6 @@ void Game::moveSnake()
         score += points;
         lastFruitEaten = foodIndex;
 
-        // MODIFIÉ : envoi du type de fruit
         emit fruitEaten(food_x[foodIndex], food_y[foodIndex], points, ft);
 
         generateSingleFood(foodIndex);
@@ -288,5 +317,5 @@ void Game::reset()
     addSegment(WIDTH / 2 - 1, HEIGHT / 2);
     addSegment(WIDTH / 2 - 2, HEIGHT / 2);
     generateFood();
-    generateObstacles();
+    generateObstacles();  // Génère selon currentLevel
 }
