@@ -642,24 +642,77 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
         return;
     }
 
+    // ============= MUR DE BÉTON GRIS 🏗️ - CLAIR ET VISIBLE =============
     for (const Obstacle &o : game.getObstacles())
     {
         QRect r(offsetX + o.x * cellSize,
                 offsetY + o.y * cellSize,
                 cellSize, cellSize);
 
-        p.fillRect(r.adjusted(2, 2, 2, 2), QColor(0, 0, 0, 50));
+        p.save();
+        p.setRenderHint(QPainter::Antialiasing);
 
-        QLinearGradient obsGrad(r.topLeft(), r.bottomRight());
-        obsGrad.setColorAt(0, QColor(140, 60, 180));
-        obsGrad.setColorAt(1, QColor(100, 30, 140));
-        p.setBrush(obsGrad);
-        p.setPen(QPen(QColor(200, 120, 255), 2));
+        // Ombre portée du mur
+        QRect shadowRect = r.adjusted(2, 2, 2, 2);
+        p.fillRect(shadowRect, QColor(0, 0, 0, 80));
+
+        // Fond du mur - Gradient gris
+        QLinearGradient wallGrad(r.topLeft(), r.bottomRight());
+        wallGrad.setColorAt(0.0, QColor(140, 140, 140));   // Gris clair
+        wallGrad.setColorAt(0.5, QColor(110, 110, 110));   // Gris moyen
+        wallGrad.setColorAt(1.0, QColor(90, 90, 90));      // Gris foncé
+
+        p.setBrush(wallGrad);
+        p.setPen(QPen(QColor(60, 60, 60), 3));  // Bordure très foncée
         p.drawRect(r.adjusted(1, 1, -1, -1));
 
-        p.setBrush(QColor(255, 255, 255, 30));
+        // Lignes de briques horizontales
+        int brickHeight = cellSize / 3;
+        p.setPen(QPen(QColor(50, 50, 50), 2));
+
+        // Ligne 1
+        p.drawLine(r.left() + 1, r.top() + brickHeight,
+                   r.right() - 1, r.top() + brickHeight);
+
+        // Ligne 2
+        p.drawLine(r.left() + 1, r.top() + 2 * brickHeight,
+                   r.right() - 1, r.top() + 2 * brickHeight);
+
+        // Lignes verticales alternées (joints de briques)
+        // Rangée 1
+        p.drawLine(r.left() + cellSize/2, r.top() + 1,
+                   r.left() + cellSize/2, r.top() + brickHeight);
+
+        // Rangée 2
+        p.drawLine(r.left() + cellSize/4, r.top() + brickHeight,
+                   r.left() + cellSize/4, r.top() + 2 * brickHeight);
+        p.drawLine(r.left() + 3*cellSize/4, r.top() + brickHeight,
+                   r.left() + 3*cellSize/4, r.top() + 2 * brickHeight);
+
+        // Rangée 3
+        p.drawLine(r.left() + cellSize/2, r.top() + 2 * brickHeight,
+                   r.left() + cellSize/2, r.bottom() - 1);
+
+        // Effet 3D - Lumière en haut à gauche
+        p.setPen(QPen(QColor(180, 180, 180, 150), 1));
+        p.drawLine(r.left() + 2, r.top() + 2, r.right() - 2, r.top() + 2);
+        p.drawLine(r.left() + 2, r.top() + 2, r.left() + 2, r.bottom() - 2);
+
+        // Effet 3D - Ombre en bas à droite
+        p.setPen(QPen(QColor(40, 40, 40, 150), 1));
+        p.drawLine(r.right() - 2, r.top() + 2, r.right() - 2, r.bottom() - 2);
+        p.drawLine(r.left() + 2, r.bottom() - 2, r.right() - 2, r.bottom() - 2);
+
+        // Texture béton (petites imperfections aléatoires)
+        p.setBrush(QColor(80, 80, 80, 60));
         p.setPen(Qt::NoPen);
-        p.drawRect(r.adjusted(3, 3, -cellSize/2, -cellSize/2));
+
+        QPoint center = r.center();
+        p.drawEllipse(center.x() - cellSize/6, center.y() - cellSize/8, 3, 2);
+        p.drawEllipse(center.x() + cellSize/8, center.y() + cellSize/10, 2, 3);
+        p.drawEllipse(center.x() - cellSize/10, center.y() + cellSize/6, 2, 2);
+
+        p.restore();
     }
 
     for (int i = 0; i < game.foodCount(); ++i)
@@ -749,25 +802,19 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
     hudGrad.setColorAt(1, QColor(5, 5, 20, 200));
     p.fillRect(hudRect, hudGrad);
 
-    // ============= TOUT SUR UNE SEULE LIGNE =============
-
-    // Score (gauche)
     p.setPen(QColor(0, 255, 180));
     p.setFont(QFont("Consolas", 16, QFont::Bold));
     p.drawText(offsetX + 20, hudY,
                QString("Score : %1").arg(game.getScore()));
 
-    // Longueur (gauche-centre)
     p.setPen(QColor(100, 200, 255));
     p.drawText(offsetX + 200, hudY,
                QString("Longueur : %1").arg(game.getLength()));
 
-    // Best (centre-droite)
     p.setPen(QColor(255, 200, 0));
     p.drawText(offsetX + gameWidth/2 + 80, hudY,
                QString("Best : %1").arg(bestScore));
 
-    // Niveau (droite)
     p.setPen(QColor(255, 150, 255));
     QString levelText;
     switch (game.getLevel())
@@ -780,7 +827,6 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
     p.drawText(offsetX + gameWidth - 220, hudY,
                QString("Niveau : %1").arg(levelText));
 
-    // Instructions (ligne 2, plus petite)
     p.setPen(QColor(150, 150, 150));
     p.setFont(QFont("Consolas", 10));
     p.drawText(offsetX + 20, hudY + 25,
