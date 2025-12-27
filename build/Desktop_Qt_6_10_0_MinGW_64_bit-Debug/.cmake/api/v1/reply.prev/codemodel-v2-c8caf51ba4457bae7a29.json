@@ -1,0 +1,79 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-88b3166ff98457029d74.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "Snake",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "Snake::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Snake-Debug-b7ddb3877af10f001baf.json",
+					"name" : "Snake",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Snake_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Snake_autogen-Debug-a788d8dcc3eb6d57cb50.json",
+					"name" : "Snake_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Snake_autogen_timestamp_deps::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Snake_autogen_timestamp_deps-Debug-13d9015dfd36e6760c09.json",
+					"name" : "Snake_autogen_timestamp_deps",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "E:/Ensa_Etude/Qt_projects/Snake/Snake/build/Desktop_Qt_6_10_0_MinGW_64_bit-Debug",
+		"source" : "E:/Ensa_Etude/Qt_projects/Snake/Snake"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}
