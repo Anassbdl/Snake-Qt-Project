@@ -7,27 +7,30 @@
 class MenuWidget : public QWidget
 {
     Q_OBJECT
+
 public:
     explicit MenuWidget(QWidget *parent = nullptr);
 
 signals:
     void startGame(int level);
     void quitGame();
-    void requestFullscreen(bool enable);
+    void requestFullscreen(bool fullscreen);  // NOUVEAU
 
 private:
     QPushButton *playButton;
     QPushButton *levelButton;
     QPushButton *quitButton;
     int currentLevel;
+    bool isFullscreen;  // NOUVEAU
 
     void setupUI();
     QString getButtonStyle(const QString &color, const QString &hoverColor);
+    void toggleFullscreen();  // NOUVEAU
 
 protected:
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
-    void keyPressEvent(QKeyEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;  // NOUVEAU
 
 private slots:
     void onPlayClicked();

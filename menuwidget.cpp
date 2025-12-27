@@ -1,13 +1,15 @@
 #include "menuwidget.h"
 #include <QPainter>
 #include <QVBoxLayout>
+#include <QFont>
+#include <QPen>
 #include <QKeyEvent>
 
 MenuWidget::MenuWidget(QWidget *parent)
-    : QWidget(parent), currentLevel(1)
+    : QWidget(parent), currentLevel(1), isFullscreen(false)
 {
     setMinimumSize(800, 600);
-    setFocusPolicy(Qt::StrongFocus);
+    setFocusPolicy(Qt::StrongFocus);  // IMPORTANT pour recevoir les événements clavier
     setupUI();
 }
 
@@ -97,8 +99,10 @@ void MenuWidget::paintEvent(QPaintEvent *event)
     p.setFont(QFont("Consolas", 16));
     p.drawText(rect().adjusted(0, 130, 0, 0), Qt::AlignHCenter | Qt::AlignTop, "Menu Principal");
 
+    // Afficher indication F11
+    p.setPen(QColor(150, 150, 150));
     p.setFont(QFont("Consolas", 10));
-    p.drawText(rect().adjusted(0, 0, 0, -20), Qt::AlignHCenter | Qt::AlignBottom, "F11 : Plein écran");
+    p.drawText(rect().adjusted(0, 0, -20, -20), Qt::AlignRight | Qt::AlignBottom, "F11 : Plein ecran");
 }
 
 void MenuWidget::resizeEvent(QResizeEvent *event)
@@ -111,12 +115,16 @@ void MenuWidget::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_F11)
     {
-        bool isCurrentlyFullscreen = window()->isFullScreen();
-        emit requestFullscreen(!isCurrentlyFullscreen);
+        toggleFullscreen();
         return;
     }
-
     QWidget::keyPressEvent(event);
+}
+
+void MenuWidget::toggleFullscreen()
+{
+    isFullscreen = !isFullscreen;
+    emit requestFullscreen(isFullscreen);
 }
 
 void MenuWidget::onPlayClicked()

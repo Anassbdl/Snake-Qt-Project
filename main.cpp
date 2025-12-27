@@ -10,9 +10,9 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     a.setStyle("Fusion");
 
-    QStackedWidget *mainStack = new QStackedWidget();
-    mainStack->setWindowTitle("Snake - GI3");
-    mainStack->resize(800, 600);
+    QStackedWidget mainStack;
+    mainStack.setWindowTitle("Snake - GI3");
+    mainStack.resize(800, 600);
 
     MenuWidget *menu = new MenuWidget();
     SnakeWidget *game = new SnakeWidget();
@@ -32,43 +32,48 @@ int main(int argc, char *argv[])
     vLayout->setContentsMargins(0, 0, 0, 0);
     vLayout->setSpacing(0);
 
-    mainStack->addWidget(menu);
-    mainStack->addWidget(gameContainer);
+    mainStack.addWidget(menu);
+    mainStack.addWidget(gameContainer);
 
+    // Connexion pour démarrer le jeu
     QObject::connect(menu, &MenuWidget::startGame, game,
-                     [game, gameContainer, mainStack](int level) {
+                     [game, gameContainer, &mainStack](int level) {
                          Q_UNUSED(level);
                          game->startGameDirectly();
-                         mainStack->setCurrentWidget(gameContainer);
+                         mainStack.setCurrentWidget(gameContainer);
                          game->setFocus();
                      });
 
-    QObject::connect(menu, &MenuWidget::quitGame, mainStack, &QWidget::close);
+    // Connexion pour quitter
+    QObject::connect(menu, &MenuWidget::quitGame, &mainStack, &QWidget::close);
 
+    // Connexion pour retourner au menu
     QObject::connect(game, &SnakeWidget::backToMenu, menu,
-                     [menu, mainStack]() {
-                         mainStack->setCurrentWidget(menu);
+                     [menu, &mainStack]() {
+                         mainStack.setCurrentWidget(menu);
                          menu->setFocus();
                      });
 
-    QObject::connect(game, &SnakeWidget::requestFullscreen, game,
-                     [mainStack](bool enable) {
-                         if (enable) {
-                             mainStack->showFullScreen();
+    // **Connexion F11 depuis le JEU**
+    QObject::connect(game, &SnakeWidget::requestFullscreen, &mainStack,
+                     [&mainStack](bool fullscreen) {
+                         if (fullscreen) {
+                             mainStack.showFullScreen();
                          } else {
-                             mainStack->showNormal();
+                             mainStack.showNormal();
                          }
                      });
 
-    QObject::connect(menu, &MenuWidget::requestFullscreen, menu,
-                     [mainStack](bool enable) {
-                         if (enable) {
-                             mainStack->showFullScreen();
+    // **Connexion F11 depuis le MENU**
+    QObject::connect(menu, &MenuWidget::requestFullscreen, &mainStack,
+                     [&mainStack](bool fullscreen) {
+                         if (fullscreen) {
+                             mainStack.showFullScreen();
                          } else {
-                             mainStack->showNormal();
+                             mainStack.showNormal();
                          }
                      });
 
-    mainStack->show();
+    mainStack.show();
     return a.exec();
 }

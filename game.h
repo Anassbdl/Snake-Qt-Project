@@ -17,6 +17,13 @@ enum Direction
     RIGHT = 4
 };
 
+enum FruitType
+{
+    APPLE,
+    BANANA,
+    PINEAPPLE
+};
+
 struct SnakeNode
 {
     int x;
@@ -33,8 +40,10 @@ struct Obstacle
 class Game : public QObject
 {
     Q_OBJECT
+
 public:
     static const int FOOD_COUNT = 3;
+
     explicit Game(QObject *parent = nullptr);
     ~Game();
 
@@ -47,8 +56,10 @@ public:
     int getLength() const { return length; }
     int foodX(int i) const { return food_x[i]; }
     int foodY(int i) const { return food_y[i]; }
+    FruitType foodType(int i) const { return food_type[i]; }
     int foodCount() const { return FOOD_COUNT; }
     bool isGameOver() const { return gameOver; }
+    Direction getDirection() const { return direction; }
     const QVector<Obstacle> &getObstacles() const { return obstacles; }
 
 private:
@@ -58,6 +69,7 @@ private:
     Direction nextDirection;
     int food_x[FOOD_COUNT];
     int food_y[FOOD_COUNT];
+    FruitType food_type[FOOD_COUNT];
     int score;
     bool gameOver;
     QVector<Obstacle> obstacles;

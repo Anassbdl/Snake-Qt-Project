@@ -111,7 +111,7 @@ void Game::generateSingleFood(int index)
             ok = false;
         if (isPositionObstacle(x, y))
             ok = false;
-        // éviter autres nourritures
+
         for (int i = 0; i < FOOD_COUNT; ++i)
         {
             if (i == index) continue;
@@ -124,6 +124,9 @@ void Game::generateSingleFood(int index)
     }
     food_x[index] = x;
     food_y[index] = y;
+
+    int randType = QRandomGenerator::global()->bounded(0, 3);
+    food_type[index] = static_cast<FruitType>(randType);
 }
 
 void Game::generateFood()
@@ -170,11 +173,13 @@ int Game::checkCollision()
         return 1;
     if (isPositionObstacle(h->x, h->y))
         return 1;
+
     SnakeNode *cur = head;
     if (cur && cur->next && cur->next->next)
         cur = cur->next->next;
     else
         return 0;
+
     while (cur)
     {
         if (h->x == cur->x && h->y == cur->y)
@@ -201,6 +206,7 @@ void Game::moveSnake()
     direction = nextDirection;
     int newX = head->x;
     int newY = head->y;
+
     switch (direction)
     {
     case UP: --newY; break;
@@ -223,7 +229,14 @@ void Game::moveSnake()
     int foodIndex = checkFoodCollision();
     if (foodIndex != -1)
     {
-        score += 10;
+        FruitType ft = food_type[foodIndex];
+        if (ft == APPLE)
+            score += 10;
+        else if (ft == BANANA)
+            score += 15;
+        else if (ft == PINEAPPLE)
+            score += 25;
+
         generateSingleFood(foodIndex);
     }
     else
