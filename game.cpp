@@ -126,7 +126,6 @@ void Game::generateSingleFood(int index)
     food_x[index] = x;
     food_y[index] = y;
 
-    // Index 0 = APPLE, Index 1 = BANANA, Index 2 = PINEAPPLE
     if (index == 0)
         food_type[index] = APPLE;
     else if (index == 1)
@@ -246,7 +245,8 @@ void Game::moveSnake()
         score += points;
         lastFruitEaten = foodIndex;
 
-        emit fruitEaten(food_x[foodIndex], food_y[foodIndex], points);
+        // MODIFIÉ : envoi du type de fruit
+        emit fruitEaten(food_x[foodIndex], food_y[foodIndex], points, ft);
 
         generateSingleFood(foodIndex);
     }

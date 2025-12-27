@@ -25,17 +25,15 @@ SnakeWidget::SnakeWidget(QWidget *parent)
     resize(preferredWidth, preferredHeight);
     connect(&timer, &QTimer::timeout, this, &SnakeWidget::gameLoop);
 
-    // Timer pour les animations de popup
     connect(&popupTimer, &QTimer::timeout, this, &SnakeWidget::updateScorePopups);
-    popupTimer.start(30); // 30ms pour une animation fluide
+    popupTimer.start(30);
 
     game.reset();
     timer.stop();
 
-    // Connexion pour l'animation quand un fruit est mangé
+    // MODIFIÉ : signature du signal avec le type de fruit
     connect(&game, &Game::fruitEaten, this, &SnakeWidget::onFruitEaten);
 
-    // Créer les boutons Game Over
     restartButton = new QPushButton("REJOUER", this);
     menuButton = new QPushButton("MENU", this);
 
@@ -125,27 +123,26 @@ void SnakeWidget::onMenuClicked()
     emit backToMenu();
 }
 
-void SnakeWidget::onFruitEaten(int x, int y, int points)
+// MODIFIÉ : réception du type de fruit
+void SnakeWidget::onFruitEaten(int x, int y, int points, FruitType type)
 {
-    // Créer un popup de score animé
     ScorePopup popup;
     popup.x = x;
     popup.y = y;
     popup.points = points;
     popup.alpha = 255;
     popup.offsetY = 0;
+    popup.fruitType = type;  // STOCKAGE du type
     scorePopups.append(popup);
 }
 
 void SnakeWidget::updateScorePopups()
 {
-    // Mettre à jour toutes les animations de popup
     for (int i = scorePopups.size() - 1; i >= 0; --i)
     {
-        scorePopups[i].alpha -= 8;  // Fade out
-        scorePopups[i].offsetY -= 2; // Monte vers le haut
+        scorePopups[i].alpha -= 8;
+        scorePopups[i].offsetY -= 2;
 
-        // Supprimer si complètement transparent
         if (scorePopups[i].alpha <= 0)
         {
             scorePopups.removeAt(i);
@@ -154,7 +151,7 @@ void SnakeWidget::updateScorePopups()
 
     if (!scorePopups.isEmpty())
     {
-        update(); // Redessiner si des popups sont actifs
+        update();
     }
 }
 
@@ -572,16 +569,29 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
         segmentIndex++;
     }
 
-    // **DESSINER LES POPUPS DE SCORE ANIMÉS**
+    // MODIFIÉ : couleur du popup selon le type de fruit
     for (const ScorePopup &popup : scorePopups)
     {
         int screenX = offsetX + popup.x * cellSize + cellSize / 2;
         int screenY = offsetY + popup.y * cellSize + popup.offsetY;
 
-        // Couleur avec transparence
-        QColor textColor(255, 255, 100, popup.alpha);
+        // Choix de la couleur selon le type de fruit
+        QColor textColor;
+        if (popup.fruitType == APPLE)
+        {
+            textColor = QColor(255, 80, 80, popup.alpha);  // 🍎 ROUGE pour pomme
+        }
+        else if (popup.fruitType == BANANA)
+        {
+            textColor = QColor(255, 235, 0, popup.alpha);  // 🍌 JAUNE pour banane
+        }
+        else if (popup.fruitType == PINEAPPLE)
+        {
+            textColor = QColor(255, 165, 0, popup.alpha);  // 🍍 ORANGE pour ananas
+        }
+
         p.setPen(textColor);
-        p.setFont(QFont("Consolas", 18, QFont::Bold));
+        p.setFont(QFont("Consolas", 20, QFont::Bold));
 
         QString scoreText = QString("+%1").arg(popup.points);
         QRect textRect(screenX - 30, screenY - 20, 60, 40);

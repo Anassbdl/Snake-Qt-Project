@@ -66,7 +66,7 @@ public:
     void clearLastFruitEaten() { lastFruitEaten = -1; }
 
 signals:
-    void fruitEaten(int x, int y, int points);
+    void fruitEaten(int x, int y, int points, FruitType type);  // MODIFIÉ : ajout du type
 
 private:
     SnakeNode *head;

@@ -13,6 +13,7 @@ struct ScorePopup
     int points;
     int alpha;
     int offsetY;
+    FruitType fruitType;  // AJOUTÉ : pour stocker le type de fruit
 };
 
 class SnakeWidget : public QWidget
@@ -37,7 +38,7 @@ private slots:
     void gameLoop();
     void onRestartClicked();
     void onMenuClicked();
-    void onFruitEaten(int x, int y, int points);
+    void onFruitEaten(int x, int y, int points, FruitType type);  // MODIFIÉ : ajout du type
     void updateScorePopups();
 
 private:
