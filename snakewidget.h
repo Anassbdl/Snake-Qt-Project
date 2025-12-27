@@ -13,7 +13,7 @@ struct ScorePopup
     int points;
     int alpha;
     int offsetY;
-    FruitType fruitType;  // AJOUTÉ : pour stocker le type de fruit
+    FruitType fruitType;
 };
 
 class SnakeWidget : public QWidget
@@ -38,8 +38,13 @@ private slots:
     void gameLoop();
     void onRestartClicked();
     void onMenuClicked();
-    void onFruitEaten(int x, int y, int points, FruitType type);  // MODIFIÉ : ajout du type
+    void onFruitEaten(int x, int y, int points, FruitType type);
     void updateScorePopups();
+
+    // NOUVEAUX SLOTS POUR PAUSE
+    void onPauseResumeClicked();
+    void onPauseRestartClicked();
+    void onPauseMenuClicked();
 
 private:
     Game game;
@@ -51,18 +56,29 @@ private:
     bool waitingStart;
     int lastScore;
 
+    // NOUVEAU : état de pause
+    bool isPaused;
+
     QPushButton *restartButton;
     QPushButton *menuButton;
+
+    // NOUVEAUX BOUTONS PAUSE
+    QPushButton *pauseResumeButton;
+    QPushButton *pauseRestartButton;
+    QPushButton *pauseMenuButton;
 
     QVector<ScorePopup> scorePopups;
 
     void toggleFullscreen();
+    void togglePause();  // NOUVEAU
     void drawSnakeSegment(QPainter &p, const QRect &rect, bool isHead,
                           float segmentRatio, Direction dir);
     void drawFruit(QPainter &p, const QRect &rect, FruitType type);
     QString getButtonStyle(const QString &color, const QString &hoverColor);
     void setupGameOverButtons();
     void hideGameOverButtons();
+    void setupPauseButtons();   // NOUVEAU
+    void hidePauseButtons();    // NOUVEAU
 };
 
 #endif // SNAKEWIDGET_H

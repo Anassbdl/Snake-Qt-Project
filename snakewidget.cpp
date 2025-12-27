@@ -16,7 +16,8 @@ SnakeWidget::SnakeWidget(QWidget *parent)
     isFullscreen(false),
     bestScore(0),
     waitingStart(true),
-    lastScore(0)
+    lastScore(0),
+    isPaused(false)  // NOUVEAU
 {
     setFocusPolicy(Qt::StrongFocus);
     int preferredWidth = WIDTH * cellSize;
@@ -31,9 +32,9 @@ SnakeWidget::SnakeWidget(QWidget *parent)
     game.reset();
     timer.stop();
 
-    // MODIFIÉ : signature du signal avec le type de fruit
     connect(&game, &Game::fruitEaten, this, &SnakeWidget::onFruitEaten);
 
+    // BOUTONS GAME OVER
     restartButton = new QPushButton("REJOUER", this);
     menuButton = new QPushButton("MENU", this);
 
@@ -57,6 +58,37 @@ SnakeWidget::SnakeWidget(QWidget *parent)
     connect(menuButton, &QPushButton::clicked, this, &SnakeWidget::onMenuClicked);
 
     hideGameOverButtons();
+
+    // NOUVEAUX BOUTONS PAUSE
+    pauseResumeButton = new QPushButton("REPRENDRE", this);
+    pauseRestartButton = new QPushButton("RECOMMENCER", this);
+    pauseMenuButton = new QPushButton("MENU PRINCIPAL", this);
+
+    QString resumeStyle = getButtonStyle("rgb(0, 220, 120)", "rgb(0, 255, 150)");
+    QString pauseRestartStyle = getButtonStyle("rgb(255, 180, 0)", "rgb(255, 200, 50)");
+    QString pauseMenuStyle = getButtonStyle("rgb(0, 160, 200)", "rgb(0, 200, 240)");
+
+    pauseResumeButton->setStyleSheet(resumeStyle);
+    pauseRestartButton->setStyleSheet(pauseRestartStyle);
+    pauseMenuButton->setStyleSheet(pauseMenuStyle);
+
+    pauseResumeButton->setFont(buttonFont);
+    pauseRestartButton->setFont(buttonFont);
+    pauseMenuButton->setFont(buttonFont);
+
+    pauseResumeButton->setFixedSize(250, 60);
+    pauseRestartButton->setFixedSize(250, 60);
+    pauseMenuButton->setFixedSize(250, 60);
+
+    pauseResumeButton->setCursor(Qt::PointingHandCursor);
+    pauseRestartButton->setCursor(Qt::PointingHandCursor);
+    pauseMenuButton->setCursor(Qt::PointingHandCursor);
+
+    connect(pauseResumeButton, &QPushButton::clicked, this, &SnakeWidget::onPauseResumeClicked);
+    connect(pauseRestartButton, &QPushButton::clicked, this, &SnakeWidget::onPauseRestartClicked);
+    connect(pauseMenuButton, &QPushButton::clicked, this, &SnakeWidget::onPauseMenuClicked);
+
+    hidePauseButtons();
 }
 
 QString SnakeWidget::getButtonStyle(const QString &color, const QString &hoverColor)
@@ -104,10 +136,40 @@ void SnakeWidget::hideGameOverButtons()
     menuButton->hide();
 }
 
+// NOUVEAUX : GESTION BOUTONS PAUSE
+void SnakeWidget::setupPauseButtons()
+{
+    int gameWidth = WIDTH * cellSize;
+    int gameHeight = HEIGHT * cellSize;
+    int offsetX = (width() - gameWidth) / 2;
+    int offsetY = (height() - (HEIGHT + 3) * cellSize) / 2;
+    if (offsetY < 0) offsetY = 0;
+
+    int centerX = offsetX + gameWidth / 2;
+    int centerY = offsetY + gameHeight / 2;
+
+    pauseResumeButton->move(centerX - 125, centerY + 30);
+    pauseRestartButton->move(centerX - 125, centerY + 100);
+    pauseMenuButton->move(centerX - 125, centerY + 170);
+
+    pauseResumeButton->show();
+    pauseRestartButton->show();
+    pauseMenuButton->show();
+    pauseResumeButton->setFocus();
+}
+
+void SnakeWidget::hidePauseButtons()
+{
+    pauseResumeButton->hide();
+    pauseRestartButton->hide();
+    pauseMenuButton->hide();
+}
+
 void SnakeWidget::onRestartClicked()
 {
     hideGameOverButtons();
     waitingStart = false;
+    isPaused = false;
     scorePopups.clear();
     game.reset();
     timer.start(160);
@@ -123,7 +185,33 @@ void SnakeWidget::onMenuClicked()
     emit backToMenu();
 }
 
-// MODIFIÉ : réception du type de fruit
+// NOUVEAUX SLOTS PAUSE
+void SnakeWidget::onPauseResumeClicked()
+{
+    togglePause();
+}
+
+void SnakeWidget::onPauseRestartClicked()
+{
+    hidePauseButtons();
+    isPaused = false;
+    waitingStart = false;
+    scorePopups.clear();
+    game.reset();
+    timer.start(160);
+    setFocus();
+    update();
+}
+
+void SnakeWidget::onPauseMenuClicked()
+{
+    hidePauseButtons();
+    isPaused = false;
+    timer.stop();
+    scorePopups.clear();
+    emit backToMenu();
+}
+
 void SnakeWidget::onFruitEaten(int x, int y, int points, FruitType type)
 {
     ScorePopup popup;
@@ -132,7 +220,7 @@ void SnakeWidget::onFruitEaten(int x, int y, int points, FruitType type)
     popup.points = points;
     popup.alpha = 255;
     popup.offsetY = 0;
-    popup.fruitType = type;  // STOCKAGE du type
+    popup.fruitType = type;
     scorePopups.append(popup);
 }
 
@@ -158,6 +246,7 @@ void SnakeWidget::updateScorePopups()
 void SnakeWidget::startGameDirectly()
 {
     waitingStart = false;
+    isPaused = false;
     scorePopups.clear();
     game.reset();
     timer.start(160);
@@ -168,6 +257,29 @@ void SnakeWidget::toggleFullscreen()
 {
     isFullscreen = !isFullscreen;
     emit requestFullscreen(isFullscreen);
+}
+
+// NOUVEAU : TOGGLE PAUSE
+void SnakeWidget::togglePause()
+{
+    if (waitingStart || game.isGameOver())
+        return;
+
+    isPaused = !isPaused;
+
+    if (isPaused)
+    {
+        timer.stop();
+        setupPauseButtons();
+    }
+    else
+    {
+        hidePauseButtons();
+        timer.start(160);
+        setFocus();
+    }
+
+    update();
 }
 
 void SnakeWidget::resizeEvent(QResizeEvent *event)
@@ -182,6 +294,10 @@ void SnakeWidget::resizeEvent(QResizeEvent *event)
 
     if (game.isGameOver()) {
         setupGameOverButtons();
+    }
+
+    if (isPaused) {
+        setupPauseButtons();
     }
 }
 
@@ -569,25 +685,23 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
         segmentIndex++;
     }
 
-    // MODIFIÉ : couleur du popup selon le type de fruit
     for (const ScorePopup &popup : scorePopups)
     {
         int screenX = offsetX + popup.x * cellSize + cellSize / 2;
         int screenY = offsetY + popup.y * cellSize + popup.offsetY;
 
-        // Choix de la couleur selon le type de fruit
         QColor textColor;
         if (popup.fruitType == APPLE)
         {
-            textColor = QColor(255, 80, 80, popup.alpha);  // 🍎 ROUGE pour pomme
+            textColor = QColor(255, 80, 80, popup.alpha);
         }
         else if (popup.fruitType == BANANA)
         {
-            textColor = QColor(255, 235, 0, popup.alpha);  // 🍌 JAUNE pour banane
+            textColor = QColor(255, 235, 0, popup.alpha);
         }
         else if (popup.fruitType == PINEAPPLE)
         {
-            textColor = QColor(255, 165, 0, popup.alpha);  // 🍍 ORANGE pour ananas
+            textColor = QColor(255, 165, 0, popup.alpha);
         }
 
         p.setPen(textColor);
@@ -596,6 +710,35 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
         QString scoreText = QString("+%1").arg(popup.points);
         QRect textRect(screenX - 30, screenY - 20, 60, 40);
         p.drawText(textRect, Qt::AlignCenter, scoreText);
+    }
+
+    // NOUVEAU : OVERLAY PAUSE
+    if (isPaused)
+    {
+        // Fond semi-transparent
+        p.fillRect(gameRect, QColor(0, 0, 0, 180));
+
+        // Titre PAUSE
+        p.setPen(QColor(0, 255, 180));
+        p.setFont(QFont("Consolas", 48, QFont::Bold));
+        QRect pauseTitleRect(gameRect.left(), gameRect.top() + 80,
+                             gameRect.width(), 60);
+        p.drawText(pauseTitleRect, Qt::AlignCenter, "PAUSE");
+
+        // Score actuel
+        p.setPen(Qt::white);
+        p.setFont(QFont("Consolas", 20));
+        QRect pauseScoreRect(gameRect.left(), gameRect.top() + 160,
+                             gameRect.width(), 40);
+        p.drawText(pauseScoreRect, Qt::AlignCenter,
+                   QString("Score : %1").arg(game.getScore()));
+
+        // Instruction
+        p.setPen(QColor(200, 200, 200));
+        p.setFont(QFont("Consolas", 12));
+        QRect instructionRect(gameRect.left(), gameRect.bottom() - 60,
+                              gameRect.width(), 30);
+        p.drawText(instructionRect, Qt::AlignCenter, "Appuie sur P pour reprendre");
     }
 
     if (game.getScore() > bestScore)
@@ -625,7 +768,7 @@ void SnakeWidget::paintEvent(QPaintEvent *event)
     p.setPen(QColor(150, 150, 150));
     p.setFont(QFont("Consolas", 10));
     p.drawText(offsetX + 20, hudY + 25,
-               "F11 : plein ecran | ESC : menu | Fleches : direction");
+               "P : pause | F11 : plein ecran | ESC : menu | Fleches : direction");
 }
 
 void SnakeWidget::keyPressEvent(QKeyEvent *event)
@@ -633,6 +776,13 @@ void SnakeWidget::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_F11)
     {
         toggleFullscreen();
+        return;
+    }
+
+    // NOUVEAU : Touche P pour pause
+    if (event->key() == Qt::Key_P)
+    {
+        togglePause();
         return;
     }
 
@@ -656,7 +806,7 @@ void SnakeWidget::keyPressEvent(QKeyEvent *event)
         return;
     }
 
-    if (game.isGameOver())
+    if (game.isGameOver() || isPaused)  // MODIFIÉ : bloquer input si pause
     {
         return;
     }
