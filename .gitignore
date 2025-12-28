@@ -1,0 +1,19 @@
+# Dossier de compilation (le gros dossier jaune sur ton image)
+build/
+build-*/
+
+# Fichiers de configuration utilisateur (spécifique à ton PC)
+CMakeLists.txt.user
+*.user
+
+# Fichiers temporaires de compilation
+*.o
+*.obj
+*.exe
+debug/
+release/
+
+# Fichiers système et VS Code
+.vscode/
+.DS_Store
+Thumbs.db
