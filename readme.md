@@ -1,17 +1,5 @@
 # 🐍 PRÉSENTATION DÉTAILLÉE DU JEU SNAKE EN Qt
 
-## Index de la Présentation
-
-1. [Vue d'ensemble du projet](#vue-densemble)
-2. [Architecture générale](#architecture-générale)
-3. [Structure des fichiers](#structure-des-fichiers)
-4. [Mécaniques de jeu détaillées](#mécaniques-de-jeu)
-5. [Système de niveaux](#système-de-niveaux)
-6. [Structures de données](#structures-de-données)
-7. [Flux de contrôle](#flux-de-contrôle)
-
----
-
 ## Vue d'ensemble
 
 Le jeu **SNAKE** est une application Qt (C++) qui implémente le jeu classique du serpent avec :
@@ -61,8 +49,6 @@ QWidget
 ```
 
 ---
-
-## Structure des Fichiers
 
 ### 📄 **game.h** - Déclaration de la logique de jeu
 
@@ -194,7 +180,75 @@ void Game::generateSingleFood(int index) {
 
 ---
 
+**Tableau Statique pour les Fruits**
+
+```cpp
+class Game {
+    static const int FOOD_COUNT = 3;
+
+    int food_x[FOOD_COUNT];       // Positions X
+    int food_y[FOOD_COUNT];       // Positions Y
+    FruitType food_type[FOOD_COUNT]; // Types
+};
+```
+
+**Avantages:**
+
+- ✅ Accès O(1) direct
+- ✅ Mémoire fixe et prédictible
+- ✅ Cache-friendly
+- ✅ Simple à gérer
+
+---
+
+**Score total:**
+
+```
+Score = Σ(points de chaque fruit mangé)
+```
+
+**Meilleur score:**
+
+- Mémorisé pendant la session de jeu
+- Réinitialisé si l'application est fermée
+- Affiché dans le HUD
+
+---
+
 #### 3. **Mouvement du serpent et consommation**
+
+**Opérations:**
+
+```cpp
+// Ajouter un segment
+void Game::addSegment(int x, int y) {
+    SnakeNode *newNode = createNode(x, y);
+    if (!head) head = newNode;
+    else {
+        SnakeNode *cur = head;
+        while (cur->next) cur = cur->next;  // Trouve la queue
+        cur->next = newNode;
+    }
+    ++length;
+}
+
+// Retirer le dernier segment
+void Game::removeLastSegment() {
+    if (!head) return;
+    if (!head->next) {
+        delete head;
+        head = nullptr;
+    } else {
+        SnakeNode *cur = head;
+        while (cur->next->next) cur = cur->next;  // Prédécesseur
+        delete cur->next;
+        cur->next = nullptr;
+    }
+    --length;
+}
+```
+
+---
 
 **Fonction clé:** `moveSnake()`
 
@@ -342,12 +396,26 @@ void Game::generateObstacles() {
 }
 ```
 
-**Obstacles par niveau:**
-| Niveau | Difficulté | Obstacles |
-|--------|-----------|-----------|
-| 1 | Facile | 5 |
-| 2 | Moyen | 8 |
-| 3 | Difficile | 12 |
+📊 **Système de Niveaux**
+
+**3 niveaux disponibles :**
+
+| Niveau | Difficulté   | Vitesse | Obstacles | Score Cible   |
+| ------ | ------------ | ------- | --------- | ------------- |
+| 1      | 🟢 Facile    | 200ms   | 5         | Débutants     |
+| 2      | 🟡 Moyen     | 140ms   | 8         | Intermédiaire |
+| 3      | 🔴 Difficile | 90ms    | 12        | Experts       |
+
+**Impact:**
+
+- **Vitesse** : Affecte le timer du `gameLoop()`
+  - Niveau 1 : 5 mouvements/seconde
+  - Niveau 2 : 7 mouvements/seconde
+  - Niveau 3 : 11 mouvements/seconde
+- **Obstacles** : Générés au démarrage selon le niveau
+  - Bloquent les mouvements
+  - Causent Game Over si heurtés
+  - Augmentent la difficulté
 
 ---
 
@@ -403,14 +471,14 @@ int Game::checkCollision() {
 
 ```
 ╔════════════════════════════════════╗
-║        SNAKE - GI3                  ║
-║     Menu Principal                  ║
-║                                      ║
-║        [ JOUER ]                     ║
-║        [ LEVEL : 1 ]                 ║
-║        [ QUITTER ]                   ║
-║                                      ║
-║  F11 : Plein écran                   ║
+║        SNAKE - GI3                 ║
+║     Menu Principal                 ║
+║                                    ║
+║        [ JOUER ]                   ║
+║        [ LEVEL : 1 ]               ║
+║        [ QUITTER ]                 ║
+║                                    ║
+║  F11 : Plein écran                 ║
 ╚════════════════════════════════════╝
 ```
 
@@ -427,86 +495,6 @@ int Game::checkCollision() {
 - `startGame(int level)` : Commence le jeu avec le niveau
 - `quitGame()` : Ferme l'application
 - `requestFullscreen(bool)` : Demande le mode plein écran
-
----
-
-### 🎮 **snakewidget.h / snakewidget.cpp** - Interface du jeu
-
-**Responsabilités:**
-
-- Rendu du jeu (painting)
-- Gestion des entrées (clavier)
-- Gestion des boutons (Pause, Restart, Menu)
-- Animation des points de score
-- HUD (affichage des stats)
-
-#### **Rendu du jeu (paintEvent)**
-
-```cpp
-void SnakeWidget::paintEvent(QPaintEvent *event) {
-    QPainter p(this);
-
-    // 1️⃣ Fond et grille du jeu
-    p.fillRect(gameRect, QColor(15, 15, 30));
-
-    // 2️⃣ Dessine les fruits
-    for (int i = 0; i < game.foodCount(); ++i) {
-        // Convertit les coordonnées de jeu en pixels
-        QRect foodRect(offsetX + game.foodX(i) * cellSize, ...);
-        drawFruit(p, foodRect, game.foodType(i));
-    }
-
-    // 3️⃣ Dessine le serpent
-    SnakeNode *cur = game.snakeHead();
-    int segmentIndex = 0;
-    while (cur) {
-        // Dégradé pour chaque segment
-        // Plus clair à la tête, plus foncé à la queue
-        drawSnakeSegment(p, rect, isHead, segmentRatio, direction);
-        cur = cur->next;
-        segmentIndex++;
-    }
-
-    // 4️⃣ Dessine les obstacles
-    for (const Obstacle &o : game.getObstacles()) {
-        QRect obstacleRect(...);
-        p.fillRect(obstacleRect, QColor(100, 0, 0));  // Rouge sombre
-    }
-
-    // 5️⃣ Dessine les popups de score (animations)
-    for (const ScorePopup &popup : scorePopups) {
-        // Affiche "+10", "+15", etc. qui disparaît progressivement
-        p.setPen(QColor(..., popup.alpha));  // Transparence
-        p.drawText(..., QString("+%1").arg(popup.points));
-    }
-
-    // 6️⃣ HUD (affichage des informations)
-    p.setPen(QColor(0, 255, 180));
-    p.drawText(..., QString("Score : %1").arg(game.getScore()));
-    p.drawText(..., QString("Longueur : %1").arg(game.getLength()));
-    p.drawText(..., QString("Best : %1").arg(bestScore));
-    p.drawText(..., QString("Niveau : %1").arg(levelText));
-
-    // 7️⃣ Écran de pause
-    if (isPaused) {
-        p.fillRect(gameRect, QColor(0, 0, 0, 180));  // Voile semi-transparent
-        p.drawText(..., "PAUSE");
-    }
-}
-```
-
-**Éléments rendus:**
-
-1. **Fond du jeu** : Couleur sombre (15, 15, 30)
-2. **Fruits** : Avec ombres et dégradés radiales
-   - 🍎 Pomme : Rouge (255, 80, 80)
-   - 🍌 Banane : Jaune (255, 235, 0)
-   - 🍍 Ananas : Orange (255, 165, 0)
-3. **Serpent** : Dégradé vert, tête plus brillante, queue plus foncée
-4. **Obstacles** : Carrés rouges (100, 0, 0)
-5. **Score popups** : Disparaissent progressivement en montant
-6. **HUD** : Affiche le score, la longueur, meilleur score, niveau
-7. **Instructions** : Touches clavier en bas de l'écran
 
 ---
 
@@ -561,12 +549,28 @@ void Game::changeDirection(Direction dir) {
 
 ---
 
-#### **Boutons du jeu**
-
 **Boutons Game Over (affichés quand gameOver == true):**
 
 - "REJOUER" : Recommence le jeu (reset)
 - "MENU" : Retour au menu
+
+```
+game.updateGame() détecte collision
+    ↓
+gameOver = true
+    ↓
+gameLoop() s'arrête (timer.stop())
+    ↓
+setupGameOverButtons() affiche
+    ├─ "REJOUER"
+    └─ "MENU"
+    ↓
+Utilisateur choisit une action
+    ├─ "REJOUER" → startGameDirectly()  (Nouvelle partie)
+    └─ "MENU" → emit backToMenu()  (Retour)
+```
+
+---
 
 **Boutons Pause (affichés quand isPaused == true):**
 
@@ -574,388 +578,27 @@ void Game::changeDirection(Direction dir) {
 - "RECOMMENCER" : Recommence le jeu
 - "MENU PRINCIPAL" : Retour au menu
 
----
-
-### ⏱️ **main.cpp** - Point d'entrée de l'application
-
-```cpp
-int main(int argc, char *argv[]) {
-    QApplication a(argc, argv);  // Crée l'application Qt
-
-    // QStackedWidget : Gestionnaire de plusieurs écrans
-    QStackedWidget *mainStack = new QStackedWidget();
-    mainStack->setWindowTitle("Snake - GI3");
-    mainStack->resize(800, 600);
-
-    // Crée les widgets principaux
-    MenuWidget *menu = new MenuWidget();
-    SnakeWidget *game = new SnakeWidget();
-
-    // Ajoute les écrans
-    mainStack->addWidget(menu);      // Index 0
-    mainStack->addWidget(gameContainer);  // Index 1
-
-    // Connexion : Menu → Jeu
-    QObject::connect(menu, &MenuWidget::startGame,
-        mainStack, [game, gameContainer, mainStack](int level) {
-            game->setLevel(level);      // Définit le niveau
-            game->startGameDirectly();  // Lance le jeu
-            mainStack->setCurrentWidget(gameContainer);  // Affiche le jeu
-            game->setFocus();  // Donne le focus à SnakeWidget
-        });
-
-    // Connexion : Jeu → Menu
-    QObject::connect(game, &SnakeWidget::backToMenu,
-        mainStack, [menu, mainStack]() {
-            mainStack->setCurrentWidget(menu);  // Retour au menu
-            menu->setFocus();
-        });
-
-    mainStack->show();
-    return a.exec();
-}
 ```
-
-**Architecture des écrans:**
-
-```
-QStackedWidget (mainStack)
-├── Index 0: MenuWidget (visible au démarrage)
-└── Index 1: GameContainer (contient SnakeWidget)
-
-Navigation:
-    MenuWidget --[startGame(level)]--> SnakeWidget
-    SnakeWidget --[backToMenu]--> MenuWidget
+Utilisateur appuie P
+    ↓
+togglePause()
+    ├─ isPaused = true
+    ├─ timer.stop()  // Arrête la boucle
+    └─ setupPauseButtons()  // Affiche les boutons
+    ↓
+paintEvent() affiche voile + "PAUSE"
+    ↓
+Utilisateur clique "REPRENDRE"
+    ↓
+togglePause()
+    ├─ isPaused = false
+    ├─ hidePauseButtons()
+    └─ timer.start()  // Reprend la boucle
 ```
 
 ---
 
-## Mécaniques de Jeu
-
-### 1. 🎯 **Création du Serpent**
-
-**Initialisation (à chaque nouveau jeu):**
-
-```
-reset() appelé
-    ↓
-Créer tête à (WIDTH/2, HEIGHT/2) = (20, 12)
-    ↓
-Ajouter segment à (19, 12)
-    ↓
-Ajouter segment à (18, 12)
-    ↓
-Longueur = 3 segments
-Direction = DROITE
-Score = 0
-```
-
-**Structure en mémoire (Liste chaînée):**
-
-```
-head → [x:20, y:12, next] → [x:19, y:12, next] → [x:18, y:12, next:nullptr]
-(Tête)      (Segment 1)         (Segment 2 - Queue)
-```
-
----
-
-### 2. 🍎 **Génération et Consommation des Aliments**
-
-**Au démarrage et quand un aliment est mangé:**
-
-```
-generateFood()
-    ├─ generateSingleFood(0)  [Pomme]
-    ├─ generateSingleFood(1)  [Banane]
-    └─ generateSingleFood(2)  [Ananas]
-```
-
-**Pour chaque aliment:**
-
-```
-Boucle {
-    x = aléatoire(1, 38)
-    y = aléatoire(1, 23)
-
-    Vérifier :
-        ✅ Pas sur le serpent ?
-        ✅ Pas sur un obstacle ?
-        ✅ Pas en double (autre aliment) ?
-
-    Si tout OK → Utiliser cette position
-    Sinon → Générer une nouvelle position
-}
-```
-
-**Quand le serpent mange:**
-
-```
-moveSnake()
-    ↓
-Détecte collision avec un fruit
-    ↓
-Points = 10/15/25 (selon le type)
-Score += Points
-    ↓
-Signal fruitEaten() envoyé
-Popup animation créée (+10, +15, +25)
-    ↓
-Nouveau fruit généré
-Serpent GARDE la nouvelle tête (crédits)
-Longueur += 1
-```
-
----
-
-### 3. 🌍 **Bordures qui se Lient (Wrap-around)**
-
-**Mécanisme:**
-
-```cpp
-if (newX < 0)      newX = WIDTH - 1;   // Gauche → Droite
-if (newX >= WIDTH) newX = 0;           // Droite → Gauche
-if (newY < 0)      newY = HEIGHT - 1;  // Haut → Bas
-if (newY >= HEIGHT) newY = 0;          // Bas → Haut
-```
-
-**Exemple:**
-
-```
-Terrain : 40×25 (0-39 en X, 0-24 en Y)
-
-Serpent en (39, 12) se déplaçant à DROITE
-    ↓
-newX = 39 + 1 = 40
-newX >= WIDTH ? Oui !
-newX = 0
-    ↓
-Serpent apparaît à (0, 12)  ✅
-
-Serpent en (0, 12) se déplaçant à GAUCHE
-    ↓
-newX = 0 - 1 = -1
-newX < 0 ? Oui !
-newX = WIDTH - 1 = 39
-    ↓
-Serpent apparaît à (39, 12)  ✅
-```
-
-**Pas de Game Over pour les bordures !** Contrairement au Snake classique, sortir d'un côté ne tue pas le serpent.
-
----
-
-### 4. 📊 **Système de Niveaux**
-
-**3 niveaux disponibles :**
-
-| Niveau | Difficulté   | Vitesse | Obstacles | Score Cible   |
-| ------ | ------------ | ------- | --------- | ------------- |
-| 1      | 🟢 Facile    | 200ms   | 5         | Débutants     |
-| 2      | 🟡 Moyen     | 140ms   | 8         | Intermédiaire |
-| 3      | 🔴 Difficile | 90ms    | 12        | Experts       |
-
-**Ajustements par niveau:**
-
-```cpp
-int Game::getSpeed() const {
-    switch (currentLevel) {
-        case 1: return 200;  // 200 millisecondes par move
-        case 2: return 140;  // Plus rapide
-        case 3: return 90;   // Très rapide
-    }
-}
-```
-
-**Impact:**
-
-- **Vitesse** : Affecte le timer du `gameLoop()`
-  - Niveau 1 : 5 mouvements/seconde
-  - Niveau 2 : 7 mouvements/seconde
-  - Niveau 3 : 11 mouvements/seconde
-- **Obstacles** : Générés au démarrage selon le niveau
-  - Bloquent les mouvements
-  - Causent Game Over si heurtés
-  - Augmentent la difficulté
-
----
-
-### 5. 🎨 **Système de Points et Scoring**
-
-**Points par fruit:**
-
-- 🍎 Pomme = 10 points
-- 🍌 Banane = 15 points
-- 🍍 Ananas = 25 points
-
-**Score total:**
-
-```
-Score = Σ(points de chaque fruit mangé)
-```
-
-**Meilleur score:**
-
-- Mémorisé pendant la session de jeu
-- Réinitialisé si l'application est fermée
-- Affiché dans le HUD
-
-**Animations:**
-
-- Popup "+10", "+15", "+25" au-dessus du fruit
-- Remonte progressivement pendant 3 secondes
-- Transparence en augmentation
-- Couleur selon le fruit
-
----
-
-## Structures de Données
-
-### 1. **Liste Chaînée pour le Serpent**
-
-```cpp
-struct SnakeNode {
-    int x;           // Position X (0-39)
-    int y;           // Position Y (0-24)
-    SnakeNode *next; // Pointeur vers le segment suivant
-};
-
-class Game {
-    SnakeNode *head;  // Pointeur vers la tête (premier segment)
-    int length;       // Longueur totale du serpent
-};
-```
-
-**Avantages:**
-
-- ✅ Insertion en O(1) au début (nouvelle tête)
-- ✅ Suppression en O(n) à la fin (optimisée avec taille pré-calculée)
-- ✅ Accès à chaque segment en O(n) (acceptable pour rendu)
-- ✅ Flexibilité pour la croissance
-
-**Opérations:**
-
-```cpp
-// Ajouter un segment
-void Game::addSegment(int x, int y) {
-    SnakeNode *newNode = createNode(x, y);
-    if (!head) head = newNode;
-    else {
-        SnakeNode *cur = head;
-        while (cur->next) cur = cur->next;  // Trouve la queue
-        cur->next = newNode;
-    }
-    ++length;
-}
-
-// Retirer le dernier segment
-void Game::removeLastSegment() {
-    if (!head) return;
-    if (!head->next) {
-        delete head;
-        head = nullptr;
-    } else {
-        SnakeNode *cur = head;
-        while (cur->next->next) cur = cur->next;  // Prédécesseur
-        delete cur->next;
-        cur->next = nullptr;
-    }
-    --length;
-}
-```
-
----
-
-### 2. **Tableau Statique pour les Fruits**
-
-```cpp
-class Game {
-    static const int FOOD_COUNT = 3;
-
-    int food_x[FOOD_COUNT];       // Positions X
-    int food_y[FOOD_COUNT];       // Positions Y
-    FruitType food_type[FOOD_COUNT]; // Types
-};
-```
-
-**Avantages:**
-
-- ✅ Accès O(1) direct
-- ✅ Mémoire fixe et prédictible
-- ✅ Cache-friendly
-- ✅ Simple à gérer
-
----
-
-### 3. **Vecteur pour les Obstacles**
-
-```cpp
-class Game {
-    QVector<Obstacle> obstacles;  // Liste dynamique
-};
-
-struct Obstacle {
-    int x, y;
-};
-```
-
-**Avantages:**
-
-- ✅ Taille variable selon le niveau
-- ✅ Itération facile pour le rendu
-- ✅ Accès O(1) direct
-- ✅ Gestion mémoire automatique avec Qt
-
----
-
-## Flux de Contrôle
-
-### 1. **Démarrage de l'application**
-
-```
-main()
-    ↓
-QApplication créée
-    ↓
-QStackedWidget créée (mainStack)
-    ↓
-MenuWidget créée
-SnakeWidget créée
-    ↓
-Signaux/Slots connectés
-    ↓
-mainStack->show()  (Affiche MenuWidget)
-    ↓
-a.exec()  (Boucle d'événements Qt)
-```
-
----
-
-### 2. **Lancer une partie**
-
-```
-Utilisateur clique "JOUER"
-    ↓
-MenuWidget::startGame(level) signal
-    ↓
-main.cpp lance slot connecté
-    ↓
-game->setLevel(level)      // Niveau sélectionné
-game->startGameDirectly()  // Initialise
-    ↓
-game.reset()
-    ├─ Crée tête au centre
-    ├─ Ajoute segments initiaux
-    ├─ generateFood() × 3
-    └─ generateObstacles()
-    ↓
-timer.start(game.getSpeed())  // Lance la boucle de jeu
-    ↓
-mainStack->setCurrentWidget(gameContainer)  // Affiche le jeu
-```
-
----
-
-### 3. **Boucle de jeu (Game Loop)**
+**Boucle de jeu (Game Loop)**
 
 **Chaque `game.getSpeed()` millisecondes :**
 
@@ -988,72 +631,6 @@ paintEvent() appelé
 Si gameOver : affiche boutons Game Over
 ```
 
-**Vitesse réelle:**
-
-- Niveau 1 (200ms) : 5 fps
-- Niveau 2 (140ms) : ~7 fps
-- Niveau 3 (90ms) : ~11 fps
-
----
-
-### 4. **Pause**
-
-```
-Utilisateur appuie P
-    ↓
-togglePause()
-    ├─ isPaused = true
-    ├─ timer.stop()  // Arrête la boucle
-    └─ setupPauseButtons()  // Affiche les boutons
-    ↓
-paintEvent() affiche voile + "PAUSE"
-    ↓
-Utilisateur clique "REPRENDRE"
-    ↓
-togglePause()
-    ├─ isPaused = false
-    ├─ hidePauseButtons()
-    └─ timer.start()  // Reprend la boucle
-```
-
----
-
-### 5. **Game Over**
-
-```
-game.updateGame() détecte collision
-    ↓
-gameOver = true
-    ↓
-gameLoop() s'arrête (timer.stop())
-    ↓
-setupGameOverButtons() affiche
-    ├─ "REJOUER"
-    └─ "MENU"
-    ↓
-Utilisateur choisit une action
-    ├─ "REJOUER" → startGameDirectly()  (Nouvelle partie)
-    └─ "MENU" → emit backToMenu()  (Retour)
-```
-
----
-
-### 6. **Retour au menu**
-
-```
-Utilisateur appuie ESC ou clique "MENU"
-    ↓
-emit backToMenu() signal
-    ↓
-main.cpp reçoit et exécute slot connecté
-    ↓
-timer.stop()  (Arrête la boucle de jeu)
-scorePopups.clear()
-    ↓
-mainStack->setCurrentWidget(menu)  (Affiche MenuWidget)
-menu->setFocus()
-```
-
 ---
 
 ## Évènements Importants
@@ -1077,16 +654,12 @@ void SnakeWidget::onFruitEaten(int x, int y, int points, FruitType type) {
 }
 ```
 
-**À chaque frame de rendu:**
+**Animations:**
 
-```cpp
-for (const ScorePopup &popup : scorePopups) {
-    popup.alpha -= 8;      // Fade out
-    popup.offsetY -= 2;    // Monte
-
-    // Dessine le texte "+10", "+15", etc.
-}
-```
+- Popup "+10", "+15", "+25" au-dessus du fruit
+- Remonte progressivement pendant 3 secondes
+- Transparence en augmentation
+- Couleur selon le fruit
 
 ---
 
