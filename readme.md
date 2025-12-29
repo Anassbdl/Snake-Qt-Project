@@ -368,10 +368,10 @@ void Game::generateObstacles() {
 
     int nbObs;  // Nombre d'obstacles selon le niveau
     switch (currentLevel) {
-        case 1: nbObs = 5;   break;   // Facile
-        case 2: nbObs = 8;   break;   // Moyen
-        case 3: nbObs = 12;  break;   // Difficile
-        default: nbObs = 8;  break;
+        case 1: nbObs = 10;   break;   // Facile
+        case 2: nbObs = 15;   break;   // Moyen
+        case 3: nbObs = 20;  break;   // Difficile
+        default: nbObs = 10;  break;
     }
 
     // Place les obstacles aléatoirement
@@ -411,9 +411,9 @@ void Game::generateObstacles() {
 
 | Niveau | Difficulté   | Vitesse | Obstacles | Score Cible   |
 | ------ | ------------ | ------- | --------- | ------------- |
-| 1      | 🟢 Facile    | 200ms   | 5         | Débutants     |
-| 2      | 🟡 Moyen     | 140ms   | 8         | Intermédiaire |
-| 3      | 🔴 Difficile | 90ms    | 12        | Experts       |
+| 1      | 🟢 Facile    | 200ms   | 10        | Débutants     |
+| 2      | 🟡 Moyen     | 140ms   | 15        | Intermédiaire |
+| 3      | 🔴 Difficile | 90ms    | 20        | Experts       |
 
 **Impact:**
 
