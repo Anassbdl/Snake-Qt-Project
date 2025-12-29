@@ -66,6 +66,15 @@ struct SnakeNode {
     SnakeNode *next;  // Liste chaînée
 };
 
+SnakeNode *Game::createNode(int x, int y)
+{
+    SnakeNode *node = new SnakeNode;
+    node->x = x;
+    node->y = y;
+    node->next = nullptr;
+    return node;
+}
+
 struct Obstacle {
     int x, y;
 };
